@@ -18,9 +18,9 @@ ENGRAM은 기능적으로 분리된 3계층 구조로 설계되어 확장성과 
 
 사용자의 발화를 분석하고 의도(Intent)를 분류하여 적절한 메모리 파이프라인으로 라우팅합니다.
 
-* **Embedding Extraction:** 사용자 발화 및 주요 엔티티를 벡터화(KoSimCSE)합니다.
-* **Triple Extraction:** 비정형 텍스트에서 `(Subject, Relation, Object)` 형태의 정형 지식을 추출합니다.
 * **Short-term Memory:** 대화 세션 내의 문맥 유지 및 대명사(Resolution) 해석을 담당합니다.
+* **Triple Extraction:** 비정형 텍스트에서 `(Subject, Relation, Object)` 형태의 정형 지식을 추출합니다.
+* **Embedding Extraction:** 사용자 발화 및 주요 엔티티를 벡터화하여 의미론적 처리를 준비합니다.
 
 ### 2.2 Memory Engine (The Brain)
 
@@ -47,8 +47,8 @@ ENGRAM은 기능적으로 분리된 3계층 구조로 설계되어 확장성과 
 
 | 방식 | 기술 (Mechanism) | 기준 (Threshold) | 예시 |
 | --- | --- | --- | --- |
-| **Vector Similarity** | 코사인 유사도 기반 의미 통합 |  | 엄마 ↔ 심청 |
-| **Fuzzy Matching** | Levenshtein Distance 기반 형태 보정 |  | 심청 ↔ 심청이 |
+| **Vector Similarity** | 코사인 유사도 기반 의미 통합 | 9.2 | 엄마 ↔ 심청 |
+| **Fuzzy Matching** | Levenshtein Distance 기반 형태 보정 | 8.5 | 심청 ↔ 심청이 |
 
 ### 3.2 Context 인지형 완전 구체화 모델 (T-Shape Reification)
 
@@ -64,8 +64,8 @@ ENGRAM은 기능적으로 분리된 3계층 구조로 설계되어 확장성과 
 
 ```
 
-* **가로축 (The Fact Layer):** `Entity` → `Event` → `Entity` 경로를 통해 사건의 시각, 강도, 임베딩을 저장합니다.
-* **세로축 (The Provenance Layer):** `Event` → `DERIVED_FROM` → `Context` 경로를 통해 원본 문장을 공유하며 중복을 차단합니다.
+* **가로축 (The Fact Layer):** `Entity(주체) → SOURCE → Event → TARGET → Entity(객체)` 경로를 통해 event 노드에 시각, 강도, 임베딩 등의 정보를 저장합니다.
+* **세로축 (The Provenance Layer):** `Event → DERIVED_FROM → Context` 경로를 통해 원본 문장을 공유하며 중복을 차단합니다.
 
 ### 3.3 PPR 기반 연상 검색 (Associative Retrieval)
 

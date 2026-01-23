@@ -93,7 +93,7 @@ Levenshtein Distance 기반의 Fuzzy Search(Threshold 0.85+)를 수행하여 조
     
     ### 3.4 [Novelty] 동적 토픽 모델링을 통한 기억 소멸 보완 (Topic Boosting)
     
-    3.3절의 Time Decay는 최신 정보를 우대하지만, **"오래되었지만 현재 문맥상 중요한 기억** **"**까지 소멸시킬 위험이 있습니다. ENGRAM은 이를 보완하기 위해 **Leiden Algorithm** 기반의 동적 토픽 모델링을 적용했습니다.
+    3.3절의 Time Decay는 최신 정보를 우대하지만, **"오래되었지만 현재 문맥상 중요한 기억"**까지 소멸시킬 위험이 있습니다. ENGRAM은 이를 보완하기 위해 **Leiden Algorithm** 기반의 동적 토픽 모델링을 적용했습니다.
     
     - **동적 군집화 (Dynamic Clustering):** 주기적인 유지보수 사이클에서 **Leiden Algorithm**을 실행하여, 서로 강하게 연결된 기억들을 의미 단위의 군집(Cluster)으로 재구성하고 `Community ID`를 부여합니다.
     - **토픽 부스팅 (Topic Boosting):** 검색 시, 시드 노드들이 속한 **주요 커뮤니티**(Dominant Community)를 파악합니다. 해당 커뮤니티에 속한 노드들은 Time Decay로 인해 가중치가 낮아졌더라도, **현재 대화 주제와 일치하므로 가산점(Boosting)을 부여**받아 우선적으로 인출됩니다.

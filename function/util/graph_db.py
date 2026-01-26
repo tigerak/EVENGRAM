@@ -738,7 +738,8 @@ class GraphMemoryEngine(GraphDB):
                 G,
                 writeProperty="communityId",
                 relationshipWeightProperty="weight",
-                gamma=1.0  # 해상도
+                # 서로 다른 대화가 자꾸 하나의 communityId로 섞인다면 값을 1.2~1.5 정도로 높여서 감도를 예민하게 조정
+                gamma=1.0  # Liden 정교화 (Refinement) 시 적용할 해상도. 
             )
             
             # 5. 메모리 해제
@@ -780,26 +781,102 @@ class GraphMemoryEngine(GraphDB):
         2. Context Expansion: PPR을 통해 시드 주변의 맥락(Event 포함) 확산
         3. Formatting: Community(토픽)별로 그룹화하여 반환
         """
-        
+        start_total = time.perf_counter()
+
         # 1. 시드 노드 확보 (Vector + NER)
+        start_seeding = time.perf_counter()
         seed_ids = self._get_hybrid_seeds(query_text, query_embedding, extract_entities_fn)
-        
+        end_seeding = time.perf_counter()
+
         if not seed_ids:
+            logger.info(f"[Retrieve] 시드 노드를 찾지 못함 (소요시간: {end_seeding - start_seeding:.4f}s)")
             return "관련된 기억을 찾을 수 없습니다."
         
+        # 시드 노드 커뮤니티 로그 기록
+        self._log_seed_communities(seed_ids)
+        
         # 2. Dominant Community 파악
+        start_comm = time.perf_counter()
         dominant_comm_id = self._get_dominant_community(seed_ids)
+        end_comm = time.perf_counter()
         if dominant_comm_id is not None:
-            logger.info(f"Dominant Topic Detected: Community #{dominant_comm_id}")
+            logger.info(f"[Retrieve] Dominant Topic Detected: Community #{dominant_comm_id}")
 
         # 3. PPR 실행 및 가산점 적용 검색
+        start_ppr = time.perf_counter()
         context_df = self._expand_context_with_ppr(seed_ids, dominant_comm_id)
+        end_ppr = time.perf_counter()
         
         if context_df.empty:
+            logger.info(f"[Retrieve] PPR 결과 없음 (소요시간: {end_ppr - start_ppr:.4f}s)")
             return "관련된 구체적 사실을 인출하지 못했습니다."
+            
+        # 검색 결과 노드 커뮤니티 로그 기록
+        self._log_result_communities(context_df)
 
-        # 4. 결과 포맷팅 
-        return self._format_retrieval_result(context_df)
+        # 4. 기억 강화 (Reinforcement)
+        start_reinf = time.perf_counter()
+        self._reinforce_memory(context_df)
+        end_reinf = time.perf_counter()
+
+        # 5. 결과 포맷팅 
+        start_format = time.perf_counter()
+        formatted_result = self._format_retrieval_result(context_df)
+        end_format = time.perf_counter()
+
+        end_total = time.perf_counter()
+
+        # 전체 성능 로그 출력
+        logger.info(
+            f"\n[Performance Metrics]\n"
+            f"- Total: {end_total - start_total:.4f}s\n"
+            f"- Seeding: {end_seeding - start_seeding:.4f}s\n"
+            f"- Comm Detection: {end_comm - start_comm:.4f}s\n"
+            f"- PPR Expansion: {end_ppr - start_ppr:.4f}s\n"
+            f"- Reinforcement: {end_reinf - start_reinf:.4f}s\n"
+            f"- Formatting: {end_format - start_format:.4f}s"
+        )
+        
+        return formatted_result
+
+    def _log_seed_communities(self, seed_ids: List[str]):
+        """추출된 시드 노드들의 텍스트와 속한 커뮤니티 로그 기록"""
+        query = """
+        MATCH (n) WHERE elementId(n) IN $ids
+        RETURN n.text AS text, coalesce(n.communityId, -1) AS comm
+        """
+        with self.driver.session() as session:
+            res = session.run(query, ids=seed_ids)
+            seeds_info = [f"'{r['text']}'(C#{r['comm']})" for r in res]
+            logger.info(f"[Trace] Extracted Seeds: {', '.join(seeds_info)}")
+
+    def _log_result_communities(self, df: pd.DataFrame):
+        """검색 결과로 선택된 팩트들이 속한 커뮤니티 분포 기록"""
+        if 'community' in df.columns:
+            comm_dist = df['community'].value_counts().to_dict()
+            logger.info(f"[Trace] Result Community Distribution: {comm_dist}")
+
+    def _reinforce_memory(self, df: pd.DataFrame):
+        """
+        검색된 이벤트를 '재공고화'하여 가중치를 1.0으로 복구합니다.
+        created_at을 현재로 갱신하여 Time Decay의 영향을 초기화합니다.
+        """
+        if df.empty: return
+        relations = df['relation'].unique().tolist()
+        
+        query = """
+        UNWIND $relations AS rel_text
+        MATCH (e:Event {text: rel_text})
+        SET e.created_at = timestamp(),
+            e.last_accessed = timestamp()
+        """
+        try:
+            with self.driver.session() as session:
+                session.run(query, relations=relations)
+            logger.info(f"[Reinforcement] {len(relations)}개의 핵심 사건 가중치 복구 완료 (Weight -> 1.0)")
+        except Exception as e:
+            logger.error(f"Reinforcement 오류: {e}")
+
 
     def _get_hybrid_seeds(self, query_text, query_embedding, extract_entities_fn) -> List[str]:
         """벡터 유사도(Semantics)와 텍스트 일치(Keywords)를 결합하여 시드 ID 추출"""
@@ -941,26 +1018,32 @@ class GraphMemoryEngine(GraphDB):
             except: pass
 
     def _format_retrieval_result(self, df: pd.DataFrame) -> str:
-        """DataFrame을 LLM이 읽기 좋은 텍스트 포맷으로 변환"""
-        formatted_text = "## Retrieved Long-term Memory:\n"
+        """
+        DataFrame을 LLM이 읽기 좋은 텍스트 포맷으로 변환
+        1. 커뮤니티별 그룹화
+        2. 동일 커뮤니티 내에서 원문(Context)별 그룹화
+        """
+        if df.empty: return "관련된 기억이 없습니다."
+
+        formatted_text = "## 인출된 장기 기억 (계층 구조):\n"
         
-        # 커뮤니티(주제)별 그룹화
-        if 'community' in df.columns:
-            groups = df.groupby('community')
-            for comm_id, group in groups:
-                # communityId가 -1이면 분류되지 않은 기억
-                topic_header = f"\n[Topic Cluster #{comm_id}]" if comm_id != -1 else "\n[General Memory]"
-                formatted_text += topic_header + "\n"
+        # 1단계: 커뮤니티별 그룹화
+        for comm_id, comm_group in df.groupby('community'):
+            topic_label = f"커뮤니티 군집 #{comm_id}" if comm_id != -1 else "미분류 일반 기억"
+            formatted_text += f"\n### {topic_label}\n"
+            
+            # 2단계: 동일 커뮤니티 내에서 원문(Context)별 그룹화
+            for context_text, context_group in comm_group.groupby('context_text'):
+                if context_text:
+                    formatted_text += f"  - **원문 맥락**: \"{context_text}\"\n"
+                else:
+                    formatted_text += "  - **맥락 정보 없음**:\n"
                 
-                for _, row in group.iterrows():
-                    # 만료된 기억(과거 사실)은 표시를 다르게
+                # 3단계: 개별 지식 트리플 출력
+                for _, row in context_group.iterrows():
                     status = "" if row.get('is_current', True) else "(과거 정보) "
-                    context_info = f" (출처: \"{row['context_text']}\")" if row['context_text'] else ""
-                    formatted_text += f"- {status}{row['subject']} --[{row['relation']}]--> {row['object']}{context_info}\n"
-        else:
-            for _, row in df.iterrows():
-                formatted_text += f"- {row['subject']} --[{row['relation']}]--> {row['object']}\n"
-                
+                    formatted_text += f"    * {status}{row['subject']} --[{row['relation']}]--> {row['object']}\n"
+                    
         return formatted_text
 
 # -------------------------------------------------------------------------

@@ -1,10 +1,10 @@
-# ENGRAM:Entity-based Neuro-symbolic Graph Retrieval And Memory
+# EVENGRAM:Entity-based Neuro-symbolic Graph Retrieval And Memory
 
 **“Context-Aware Dynamic Knowledge Graph Architecture for Personalized AI Agents”**
 
 ## **1. 개요 (Abstract)**
 
-**ENGRAM**은 기존 벡터 기반 RAG(Retrieval-Augmented Generation) 시스템의 고질적 한계인 '**기억의 파편화**(Memory Fragmentation)'와 이로 인한 LLM의 **'맥락 붕괴**(Context Collapse)**'** 및 **'환각**(Hallucination)**'** 문제를 근본적으로 해결하기 위해 설계된 **뉴로-심볼릭(Neuro-symbolic) 메모리 아키텍처**입니다.
+**EVENGRAM**은 기존 벡터 기반 RAG(Retrieval-Augmented Generation) 시스템의 고질적 한계인 '**기억의 파편화**(Memory Fragmentation)'와 이로 인한 LLM의 **'맥락 붕괴**(Context Collapse)**'** 및 **'환각**(Hallucination)**'** 문제를 근본적으로 해결하기 위해 설계된 **뉴로-심볼릭(Neuro-symbolic) 메모리 아키텍처**입니다.
 
 인간의 해마(기억 인덱싱)와 신피질(지식 저장) 간의 상호작용 체계를 모사한 ENGRAM은, 단편적인 정보 조각을 검색하는 수준을 넘어 지식 간의 유기적 연결을 복원하는 데 집중합니다. 특히 정적인 지식 그래프의 한계를 극복하고 실시간 대화형 에이전트 환경에 최적화하기 위해, 데이터의 출처(Provenance)와 시의성(Recency)을 물리적으로 보존하는 **'Event 중심의 구체화**(Reification)**'** 모델을 채택하였습니다.
 
@@ -13,7 +13,7 @@
 
 ## 2. 시스템 아키텍처 (System Architecture)
 
-ENGRAM은 기능적으로 분리된 **Agent Layer**, **Memory Engine**, **Storage Layer**의 3계층 구조로 설계되어 확장성과 유지보수성을 극대화했습니다.
+EVENGRAM은 기능적으로 분리된 **Agent Layer**, **Memory Engine**, **Storage Layer**의 3계층 구조로 설계되어 확장성과 유지보수성을 극대화했습니다.
 
 ### 2.1 Agent Layer (Cognitive Processor)
 
@@ -41,7 +41,7 @@ ENGRAM은 기능적으로 분리된 **Agent Layer**, **Memory Engine**, **Storag
 
 ## **3. 핵심 아키텍처 및 독창성 (Core Architecture & Novelty)**
 
-ENGRAM은 기존 연구를 단순히 조합한 것이 아니라, 구조적 한계를 알고리즘으로 극복하는 독창적인 엔지니어링 설계를 포함하고 있습니다.
+EVENGRAM은 기존 연구를 단순히 조합한 것이 아니라, 구조적 한계를 알고리즘으로 극복하는 독창적인 엔지니어링 설계를 포함하고 있습니다.
 
 ### **3.1 [Novelty] 하이브리드 엔티티 해상 (Real-time Hybrid Entity Resolution)**
 
@@ -68,7 +68,7 @@ Levenshtein Distance 기반의 Fuzzy Search(Threshold 0.85+)를 수행하여 조
                                   (Context)
     ```
     
-    ENGRAM의 데이터는 **가로축**(Fact)과 **세로축**(Source)이 교차하는 T자형 구조를 가집니다.
+    EVENGRAM의 데이터는 **가로축**(Fact)과 **세로축**(Source)이 교차하는 T자형 구조를 가집니다.
     
     **가로축 - 사실 관계 (The Fact Layer):**
     
@@ -85,7 +85,7 @@ Levenshtein Distance 기반의 Fuzzy Search(Threshold 0.85+)를 수행하여 조
     ### 3.3 [Algorithm] Hop 거리 증가와 PPR 기반 연상 검색
     
     위의 3.2절에서 채택한 **Event 매개 구조**(Reified Model)는 정보의 표현력을 높여주지만, 엔티티 간 거리가 멀어지는 구조적 페널티를 동반합니다. 
-    ENGRAM은 이를 극복하기 위해 **Time Decay**(시간 감쇠)와 결합된 **Associative Retrieval** (연상 검색) 방식을 채택했습니다.
+    EVENGRAM은 이를 극복하기 위해 **Time Decay**(시간 감쇠)와 결합된 **Associative Retrieval** (연상 검색) 방식을 채택했습니다.
     
     - **Time Decay Weighting:** 에빙하우스의 망각 곡선을 적용하여, 오래된 `Event`의 연결 강도(`weight`)를 지수 함수적으로 감소시킵니다.
     - **Propagation with PPR:** 단순 탐색 대신 **Personalized PageRank (PPR)** 알고리즘을 적용합니다. 이때 확률의 전파는 앞서 계산된 Time Decay 가중치를 따르므로, 자연스럽게 **최신 기억(Recency) 위주로 탐색이 활성화**됩니다.
@@ -102,7 +102,7 @@ Levenshtein Distance 기반의 Fuzzy Search(Threshold 0.85+)를 수행하여 조
 
 ## 4. 이론적 배경 및 논문 출처 (Theoretical Foundation)
 
-ENGRAM의 각 모듈은 해당 연구들을 엔지니어링 관점에서 재해석하여 구현되었습니다.
+EVENGRAM의 각 모듈은 해당 연구들을 엔지니어링 관점에서 재해석하여 구현되었습니다.
 
 | 모듈 | 기술적 근거 및 적용 | 참조 논문 (Reference) |
 | --- | --- | --- |
@@ -116,7 +116,7 @@ ENGRAM의 각 모듈은 해당 연구들을 엔지니어링 관점에서 재해�
 
 ## 5. 발전 로드맵 (Development Roadmap)
 
-현재의 ENGRAM은 강력한 '메모리 엔진'을 완성했습니다. 다음 단계는 이 엔진 위에 **"사용자의 인지 패턴을 학습하는 효율적인 두뇌(SLM)"**를 탑재하여, 진정한 의미의 개인화 AI(Personal AI)로 진화하는 것입니다.
+현재의 EVENGRAM은 강력한 '메모리 엔진'을 완성했습니다. 다음 단계는 이 엔진 위에 **"사용자의 인지 패턴을 학습하는 효율적인 두뇌(SLM)"**를 탑재하여, 진정한 의미의 개인화 AI(Personal AI)로 진화하는 것입니다.
 
 ### Phase 1: 데이터 축적 및 안정화 (Current)
 
@@ -150,7 +150,7 @@ ENGRAM의 각 모듈은 해당 연구들을 엔지니어링 관점에서 재해�
 
 ## 6. 결론 (Conclusion)
 
-**ENGRAM**은 단순한 검색 증강 생성(RAG)을 넘어선 차세대 메모리 아키텍처입니다.
+**EVENGRAM**은 단순한 검색 증강 생성(RAG)을 넘어선 차세대 메모리 아키텍처입니다.
 
 1. **Structure:** `Context` 분리형 T-Shape 구조를 통해 기억을 구조적으로 저장하고 무결성을 보장합니다.
 2. **Associate:** 벡터와 그래프를 결합한 하이브리드 검색으로 인간처럼 맥락을 연상합니다.
@@ -161,7 +161,7 @@ ENGRAM의 각 모듈은 해당 연구들을 엔지니어링 관점에서 재해�
 
 ## **7. 기술 스택 (Technology Stack)**
 
-ENGRAM은 **불필요한 오버헤드를 제거한 고성능 아키텍처**를 지향합니다. 무거운 프레임워크(LangChain 등)에 의존하지 않고, **FastAPI**와 **Native Driver**를 활용하여 직접 최적화된 파이프라인을 구축하였으며, 한국어 특화 모델(KoBERTa)과 최신 경량 고속 모델(Gemini 2.5 Flash)을 결합하여 실용성을 극대화했습니다.
+EVENGRAM은 **불필요한 오버헤드를 제거한 고성능 아키텍처**를 지향합니다. 무거운 프레임워크(LangChain 등)에 의존하지 않고, **FastAPI**와 **Native Driver**를 활용하여 직접 최적화된 파이프라인을 구축하였으며, 한국어 특화 모델(KoBERTa)과 최신 경량 고속 모델(Gemini 2.5 Flash)을 결합하여 실용성을 극대화했습니다.
 
 ### 7.1 Core Framework & Language
 
@@ -189,7 +189,7 @@ ENGRAM은 **불필요한 오버헤드를 제거한 고성능 아키텍처**를 �
     - **선정 이유:** 실시간 대화형 에이전트에게 필수적인 '빠른 추론 속도(Low Latency)'와 **'긴 문맥(Long Context)'** 처리에 최적화된 모델입니다.
     - **Role:** 사용자 의도 분류, Triple 추출, 최종 답변 생성.
 - **Embedding Model:** **KoSimCSE-roberta**
-    - **선정 이유:** ENGRAM의 핵심 기능인 하이브리드 엔티티 해상(유사한 개체 통합)과 **질의-기억 간 벡터 검색** 성능을 극대화하기 위해 한국어에 최적화된 KoSimCSE를 선정했습니다.
+    - **선정 이유:** EVENGRAM의 핵심 기능인 하이브리드 엔티티 해상(유사한 개체 통합)과 **질의-기억 간 벡터 검색** 성능을 극대화하기 위해 한국어에 최적화된 KoSimCSE를 선정했습니다.
     - **Role:** 사용자 발화 및 엔티티의 벡터 임베딩 생성 (Semantic Search용).
 
 ### 7.5 Data Processing & Libraries (Native Implementation)

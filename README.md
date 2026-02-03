@@ -1,4 +1,4 @@
-# EVENGRAM:Entity-based Neuro-symbolic Graph Retrieval And Memory
+# EVENGRAM:Event-based Graph Retrieval And Memory
 
 **“Context-Aware Dynamic Knowledge Graph Architecture for Personalized AI Agents”**
 

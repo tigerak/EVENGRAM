@@ -29,6 +29,7 @@ SUBGRAPH_TOP_K = 500
 COST_FACT_EDGE = 1.0       # 명시적 엣지 비용 (팩트 엣지)
 COST_SIMILAR_EDGE = 10.0   # 잠재적 엣지 비용 (유사도 엣지)
 COST_DEFAULT_EDGE = 5.0    # 출처 엣지 비용
+INTRA_COMMUNITY_DISCOUNT = 0.8 # 커뮤니티 내 비용 20% 할인
 
 # 로깅 설정
 logger = LogManager("GraphEngine").get_logger()
@@ -516,7 +517,7 @@ class GraphReasoningEngine:
             result_text = self._format_steiner_result(steiner_subgraph)
 
             logger.info(f"추론 완료: {time.time() - start_time:.2f}초 소요")
-            
+
             return f"[{context_summary}]\n\n{result_text}"
 
         except Exception as e:
@@ -533,23 +534,39 @@ class GraphReasoningEngine:
         
         # 노드 추가
         for nid, props in data['nodes'].items():
-            G.add_node(nid, **props)
+            G.add_node(nid, **props) # props 안에 'community' 정보가 들어있음
             
         # 엣지 추가 (Cost 부여)
         for edge in data['edges']:
+            source = edge['source']
+            target = edge['target']
             edge_type = edge['type']
             
             # [Cost Policy]
+            # (1) 기본 비용 설정 (Base Cost)
             if edge_type in ['SOURCE', 'TARGET']:
-                cost = COST_FACT_EDGE  # 명시적 사실 (1.0)
+                base_cost = COST_FACT_EDGE  # 명시적 사실 (1.0)
             elif edge_type == 'SIMILAR_TO':
-                cost = COST_SIMILAR_EDGE # 잠재적 연결 (10.0) -> 정말 필요할 때만 써라
+                base_cost = COST_SIMILAR_EDGE # 잠재적 연결 (10.0) -> 정말 필요할 때만 써라
             elif edge_type == 'DERIVED_FROM':
-                cost = COST_DEFAULT_EDGE # 출처 연결
+                base_cost = COST_DEFAULT_EDGE # 출처 연결
             else:
-                cost = COST_DEFAULT_EDGE
+                base_cost = COST_DEFAULT_EDGE
 
-            G.add_edge(edge['source'], edge['target'], weight='cost', cost=cost, type=edge_type)
+            # (2) 커뮤니티 기반 보정 (Community Adjustment)
+            # 두 노드의 커뮤니티 ID를 가져옴 (없으면 -1)
+            comm_s = data['nodes'][source].get('community', -1)
+            comm_t = data['nodes'][target].get('community', -2) # 서로 다르게 초기화
+
+            # 같은 커뮤니티면 비용 20% 할인 (0.8배)
+            # 단, -1(미분류)끼리는 할인하지 않음
+            if comm_s != -1 and comm_s == comm_t:
+                final_cost = base_cost * INTRA_COMMUNITY_DISCOUNT 
+                # logger.debug(f"Community Match ({source}-{target}): Cost {base_cost} -> {final_cost}")
+            else:
+                final_cost = base_cost # 다르면 비용 그대로
+
+            G.add_edge(edge['source'], edge['target'], weight='cost', cost=final_cost, type=edge_type)
             
         return G
     
@@ -570,7 +587,7 @@ class GraphReasoningEngine:
 
         dominant_comm_id = comm_counts.most_common(1)[0][0]
         
-        # 2. 해당 커뮤니티에 속한 노드 중 PPR 점수가 높은 Top 3 단어 추출
+        # 2. 해당 커뮤니티에 속한 노드 중 PPR 점수가 높은 Top 5 단어 추출
         context_nodes = [
             n for n, d in G.nodes(data=True) 
             if d.get('community') == dominant_comm_id

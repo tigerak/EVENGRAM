@@ -510,9 +510,14 @@ class GraphReasoningEngine:
             steiner_subgraph = steiner_tree(G, valid_terminals, weight='cost')
             
             # 4. 결과 포맷팅
+            # 지배적인 토픽(Community) 파악하여 LLM에게 힌트 제공
+            context_summary = self._get_dominant_context_keywords(G)
+            # 추론 경로 텍스트화
             result_text = self._format_steiner_result(steiner_subgraph)
+
             logger.info(f"추론 완료: {time.time() - start_time:.2f}초 소요")
-            return result_text
+            
+            return f"[{context_summary}]\n\n{result_text}"
 
         except Exception as e:
             logger.error(f"Steiner Tree 실패: {e}")
@@ -547,6 +552,34 @@ class GraphReasoningEngine:
             G.add_edge(edge['source'], edge['target'], weight='cost', cost=cost, type=edge_type)
             
         return G
+    
+    def _get_dominant_context_keywords(self, G: nx.Graph) -> str:
+        """
+        그래프에서 가장 지배적인 커뮤니티를 찾고, 그 커뮤니티의 핵심 키워드를 추출
+        """
+        from collections import Counter
+        
+        # 1. 가장 많이 등장한 커뮤니티 ID 찾기
+        comm_counts = Counter([
+            d['community'] for n, d in G.nodes(data=True) 
+            if d.get('community', -1) != -1
+        ])
+        
+        if not comm_counts:
+            return "일반"
+
+        dominant_comm_id = comm_counts.most_common(1)[0][0]
+        
+        # 2. 해당 커뮤니티에 속한 노드 중 PPR 점수가 높은 Top 3 단어 추출
+        context_nodes = [
+            n for n, d in G.nodes(data=True) 
+            if d.get('community') == dominant_comm_id
+        ]
+        # 점수순 정렬
+        context_nodes.sort(key=lambda x: G.nodes[x].get('ppr_score', 0), reverse=True)
+        top_keywords = context_nodes[:5]
+        
+        return f"주요 토픽: {', '.join(top_keywords)} (ID: {dominant_comm_id})"
    
     def _format_steiner_result(self, subgraph: nx.Graph) -> str:
         """

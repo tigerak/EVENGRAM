@@ -1,0 +1,16 @@
+.env
+
+app/logs/
+*configs/
+*data/
+*models/
+*databases/
+*logs/
+venv/
+
+
+__pycache__
+config.py
+secret.py
+admin_ctl.py
+entrypoint.sh

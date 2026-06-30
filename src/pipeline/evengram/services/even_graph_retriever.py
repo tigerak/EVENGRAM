@@ -3,8 +3,8 @@ from typing import List, Dict, Any
 import networkx as nx
 from networkx.algorithms import approximation
 
-from pipeline.common.utils.logger import LogManager
-from pipeline.common.database.neo4j_adapter import Neo4jHandler
+from src.pipeline.common.utils.logger import LogManager
+from src.pipeline.common.database.neo4j_adapter import Neo4jHandler
 
 logger = LogManager("GraphRetriever").get_logger()
 
